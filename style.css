@@ -1,0 +1,52 @@
+body { margin: 0; overflow: hidden; background: #000; font-family: 'Arial Black', sans-serif; }
+
+#gui {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; /* Agar klik tembus ke 3D jika tidak kena tombol */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+.stats {
+    pointer-events: auto;
+    background: rgba(0,0,0,0.6);
+    color: #FFD700;
+    padding: 10px 20px;
+    border-radius: 5px;
+    width: fit-content;
+    font-size: 24px;
+}
+
+.controls {
+    pointer-events: auto;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+button {
+    background: #00A2FF;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 8px;
+    border-bottom: 5px solid #005A8E;
+    cursor: pointer;
+    transition: 0.1s;
+}
+
+button:active {
+    border-bottom: 2px solid #005A8E;
+    transform: translateY(3px);
+}
+
+button:disabled {
+    background: #777;
+    border-bottom-color: #444;
+}
