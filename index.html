@@ -2,19 +2,32 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Roblox Garden 3D</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Roblox Garden 3D - Nasa Edition</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Arial Black', sans-serif; }
+        #gui { position: absolute; top: 20px; left: 20px; color: white; text-shadow: 2px 2px 0 #000; pointer-events: none; }
+        #crosshair { 
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; 
+            border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%);
+        }
+        #instructions {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px; text-align: center;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
     <div id="gui">
-        <div class="stats">Uang: $<span id="money">0</span></div>
-        <div class="controls">
-            <button id="btnPlant">🌱 TANAM (FREE)</button>
-            <button id="btnWater" disabled>💧 SIRAM</button>
-        </div>
+        <h1>Kebun 3D Nasa</h1>
+        <div>Uang: $<span id="money">0</span></div>
+        <p>Gunakan W,A,S,D untuk Jalan | Spasi untuk Loncat</p>
     </div>
-
-    <div id="game-container"></div>
+    <div id="crosshair"></div>
+    <div id="instructions">
+        <h2>Klik untuk Bermain</h2>
+        <p>(W,A,S,D = Jalan, Mouse = Lihat sekeliling)</p>
+    </div>
 
     <script type="importmap">
         { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
