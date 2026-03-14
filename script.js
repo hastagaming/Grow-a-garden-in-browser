@@ -1,107 +1,120 @@
 import * as THREE from 'three';
 
-// --- SETUP DASAR ---
+// --- SETUP SCENE ---
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x54A6FF); // Langit biru Roblox
+scene.background = new THREE.Color(0x87CEEB);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(5, 5, 8);
-camera.lookAt(0, 0, 0);
-
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
-document.getElementById('game-container').appendChild(renderer.domElement);
+renderer.setPixelRatio(window.devicePixelRatio);
+document.body.appendChild(renderer.domElement);
 
 // --- CAHAYA ---
 const sun = new THREE.DirectionalLight(0xffffff, 1.5);
 sun.position.set(10, 20, 10);
-sun.castShadow = true;
 scene.add(sun);
-scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
-// --- DUNIA (Baseplate) ---
-const gridHelper = new THREE.GridHelper(20, 20, 0xffffff, 0x888888);
-scene.add(gridHelper);
-
-const groundGeo = new THREE.BoxGeometry(20, 0.2, 20);
-const groundMat = new THREE.MeshStandardMaterial({ color: 0x316e1f });
-const ground = new THREE.Mesh(groundGeo, groundMat);
-ground.position.y = -0.1;
-ground.receiveShadow = true;
+// --- TANAH & PLOT ---
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshStandardMaterial({ color: 0x4CAF50 }));
+ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
-// --- LOGIKA TANAMAN ---
-let plant = null;
-let stage = 0;
-let money = 0;
-
-const btnPlant = document.getElementById('btnPlant');
-const btnWater = document.getElementById('btnWater');
-const moneyDisplay = document.getElementById('money');
-
-function createPart(w, h, d, color) {
-    const geo = new THREE.BoxGeometry(w, h, d);
-    const mat = new THREE.MeshStandardMaterial({ color: color });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.castShadow = true;
-    return mesh;
+const plots = [];
+for(let i = 0; i < 6; i++) {
+    const plot = new THREE.Mesh(new THREE.BoxGeometry(4, 0.2, 4), new THREE.MeshStandardMaterial({ color: 0x795548 }));
+    const x = (i % 2) * 8 - 4;
+    const z = Math.floor(i / 2) * 8 - 8;
+    plot.position.set(x, 0.1, z);
+    scene.add(plot);
+    plots.push({ mesh: plot, plant: null, stage: 0 });
 }
 
-window.plantSeed = () => {
-    if(plant) scene.remove(plant);
+// --- KARAKTER (HUMANOID) ---
+const player = new THREE.Group();
+const body = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 0.5), new THREE.MeshStandardMaterial({ color: 0x00A2FF }));
+body.position.y = 0.75;
+player.add(body);
+scene.add(player);
+
+// --- LOGIKA JOYSTICK ---
+const knob = document.getElementById('joystick-knob');
+const container = document.getElementById('joystick-container');
+let moveDir = { x: 0, y: 0 };
+let isMoving = false;
+
+container.addEventListener('touchstart', (e) => { isMoving = true; handleMove(e); });
+container.addEventListener('touchmove', (e) => { handleMove(e); });
+container.addEventListener('touchend', () => { 
+    isMoving = false; 
+    knob.style.transform = `translate(0px, 0px)`;
+    moveDir = { x: 0, y: 0 };
+});
+
+function handleMove(e) {
+    const rect = container.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const touch = e.touches[0];
     
-    // Buat batang kecil (Part hijau)
-    plant = createPart(0.4, 0.2, 0.4, 0x00FF00);
-    plant.position.y = 0.1;
-    scene.add(plant);
+    let dx = touch.clientX - centerX;
+    let dy = touch.clientY - centerY;
+    const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
+    const angle = Math.atan2(dy, dx);
     
-    stage = 1;
-    btnPlant.disabled = true;
-    btnWater.disabled = false;
-};
-
-window.waterPlant = () => {
-    stage++;
-    if(stage <= 5) {
-        plant.scale.y += 2;
-        plant.position.y += 0.2;
-    }
+    const tx = Math.cos(angle) * dist;
+    const ty = Math.sin(angle) * dist;
     
-    if(stage === 5) {
-        // Efek Mekar (Part Merah di atas)
-        const flower = createPart(1, 1, 1, 0xFF0055);
-        flower.position.y = 0.8;
-        plant.add(flower);
-        
-        money += 50;
-        moneyDisplay.innerText = money;
-        btnWater.innerText = "PANEN";
-    }
+    knob.style.transform = `translate(${tx}px, ${ty}px)`;
+    
+    moveDir.x = Math.cos(angle) * (dist / 40);
+    moveDir.y = Math.sin(angle) * (dist / 40);
+}
 
-    if(stage > 5) {
-        scene.remove(plant);
-        plant = null;
-        stage = 0;
-        btnWater.innerText = "SIRAM";
-        btnWater.disabled = true;
-        btnPlant.disabled = false;
-    }
-};
+// --- ACTION BUTTON ---
+document.getElementById('action-btn').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    plots.forEach(p => {
+        const d = player.position.distanceTo(p.mesh.position);
+        if(d < 4) {
+            if(!p.plant) {
+                p.plant = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.8), new THREE.MeshStandardMaterial({ color: 0x00FF00 }));
+                p.plant.position.set(p.mesh.position.x, 0.5, p.mesh.position.z);
+                scene.add(p.plant);
+                p.stage = 1;
+            } else if(p.stage < 3) {
+                p.stage++;
+                p.plant.scale.y += 2;
+                p.plant.position.y += 0.2;
+            } else {
+                scene.remove(p.plant);
+                p.plant = null; p.stage = 0;
+                document.getElementById('money').innerText = parseInt(document.getElementById('money').innerText) + 10;
+            }
+        }
+    });
+});
 
-// Hubungkan tombol ke fungsi
-btnPlant.onclick = window.plantSeed;
-btnWater.onclick = window.waterPlant;
-
-// --- LOOP ANIMASI ---
+// --- GAME LOOP ---
 function animate() {
     requestAnimationFrame(animate);
-    if(plant) plant.rotation.y += 0.01;
+    
+    if(isMoving) {
+        player.position.x += moveDir.x * 0.2;
+        player.position.z += moveDir.y * 0.2;
+        // Biar karakter menghadap arah jalan
+        player.rotation.y = -Math.atan2(moveDir.y, moveDir.x) + Math.PI/2;
+    }
+    
+    // Kamera mengikuti karakter (Third Person View)
+    camera.position.set(player.position.x, player.position.y + 10, player.position.z + 12);
+    camera.lookAt(player.position);
+    
     renderer.render(scene, camera);
 }
 animate();
 
-// Resize Handler
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
